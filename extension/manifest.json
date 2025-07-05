@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "PostQL",
+  "description": "Query JSON responses in Postman with natural language.",
+  "icons": {
+    "128": "icon128.png"
+  },
+  "version": "0.1",
+  "permissions": [
+    "clipboardRead"
+  ],
+  "host_permissions": [
+    "https://*.postman.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://*.postman.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

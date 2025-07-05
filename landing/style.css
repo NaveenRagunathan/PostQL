@@ -1,0 +1,96 @@
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f8f9fa;
+  color: #222;
+}
+.hero {
+  background: linear-gradient(90deg, #007bff 0%, #00b8d9 100%);
+  color: #fff;
+  text-align: center;
+  padding: 3rem 1rem 2rem 1rem;
+}
+.hero h1 {
+  font-size: 3rem;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: 1px;
+}
+.tagline {
+  font-size: 1.3rem;
+  margin-bottom: 2rem;
+}
+.cta {
+  display: inline-block;
+  background: #fff;
+  color: #007bff;
+  border-radius: 24px;
+  padding: 0.75rem 2rem;
+  margin: 0.5rem 0.5rem 0 0.5rem;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: background 0.2s, color 0.2s;
+}
+.cta.secondary {
+  background: #007bff;
+  color: #fff;
+  border: 2px solid #fff;
+}
+.cta:hover {
+  background: #e3e3e3;
+  color: #0056b3;
+}
+.features, .screenshots, .install, .faq {
+  max-width: 700px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.features ul {
+  list-style: none;
+  padding: 0;
+}
+.features li {
+  font-size: 1.1rem;
+  margin: 0.8rem 0;
+  padding-left: 1.5em;
+  position: relative;
+}
+.features li:before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #007bff;
+  font-size: 1.3em;
+}
+.screenshots img {
+  max-width: 48%;
+  margin: 1%;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+.install ol {
+  padding-left: 1.5em;
+}
+.install li {
+  margin: 0.7em 0;
+}
+.faq dt {
+  font-weight: bold;
+  margin-top: 1em;
+}
+.faq dd {
+  margin: 0 0 1em 0.5em;
+}
+footer {
+  text-align: center;
+  color: #888;
+  padding: 2rem 0 1rem 0;
+  font-size: 1rem;
+  background: none;
+}
