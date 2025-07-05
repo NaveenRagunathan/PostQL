@@ -81,12 +81,13 @@ function injectUI() {
 
   // --- Main Query Logic ---
   button.onclick = async () => {
-    const query = input.value;
+    const query = input.value.trim();
     if (!query) {
       resultDiv.textContent = 'Please enter a query.';
       return;
     }
     resultDiv.textContent = 'Running query...';
+    button.disabled = true;
 
     const executeQuery = async (json) => {
       try {
@@ -95,41 +96,59 @@ function injectUI() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ json, query }),
         });
+        
         if (!response.ok) {
-          const errorData = await response.json();
-          resultDiv.textContent = `Error: ${errorData.error || 'Failed to process query'}`;
-          return;
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        resultDiv.textContent = data.result;
+        resultDiv.textContent = data.result || 'Query executed successfully';
       } catch (error) {
-        resultDiv.textContent = `Error: ${error.message}`;
+        console.error('Query execution error:', error);
+        throw error;
       }
     };
 
-    // Try to get JSON from clipboard first
     try {
-      const clipboardText = await navigator.clipboard.readText();
-      const json = JSON.parse(clipboardText);
-      await executeQuery(json);
-    } catch (error) {
-      console.error('Failed to get JSON from clipboard:', error);
-      // If clipboard fails, try to get JSON from the page
+      // Try clipboard first
+      try {
+        await navigator.permissions.query({ name: 'clipboard-read' });
+        const clipboardText = await navigator.clipboard.readText();
+        
+        if (!clipboardText) {
+          throw new Error('Clipboard is empty');
+        }
+        
+        const json = JSON.parse(clipboardText);
+        cachedJson = json;
+        await executeQuery(json);
+        return;
+      } catch (clipboardError) {
+        console.log('Clipboard access failed, trying page content...', clipboardError);
+      }
+
+      // Fallback to page content
       try {
         const elements = document.querySelectorAll('.response-viewer-tab-content');
         for (const element of elements) {
           const jsonText = element.textContent.trim();
           if (jsonText) {
             const json = JSON.parse(jsonText);
+            cachedJson = json;
             await executeQuery(json);
             return;
           }
         }
-        resultDiv.textContent = 'No JSON data found in clipboard or page.';
-      } catch (error) {
-        console.error('Failed to get JSON from page:', error);
-        resultDiv.textContent = 'No valid JSON data found. Please copy JSON data to clipboard or ensure it is visible on the page.';
+        throw new Error('No JSON data found in page content');
+      } catch (pageError) {
+        console.error('Page content error:', pageError);
+        throw new Error('Could not find any JSON data. Please copy some JSON to clipboard or view it in Postman.');
       }
+    } catch (error) {
+      console.error('PostQL Error:', error);
+      resultDiv.textContent = `Error: ${error.message || 'Failed to process your request'}`;
+    } finally {
+      button.disabled = false;
     }
   };
 

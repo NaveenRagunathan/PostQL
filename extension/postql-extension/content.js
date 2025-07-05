@@ -107,29 +107,16 @@ function injectUI() {
       }
     };
 
-    // Try to get JSON from clipboard first
     try {
+      // Request clipboard permission on user interaction
+      await navigator.permissions.query({ name: 'clipboard-read' });
       const clipboardText = await navigator.clipboard.readText();
       const json = JSON.parse(clipboardText);
       await executeQuery(json);
     } catch (error) {
-      console.error('Failed to get JSON from clipboard:', error);
-      // If clipboard fails, try to get JSON from the page
-      try {
-        const elements = document.querySelectorAll('.response-viewer-tab-content');
-        for (const element of elements) {
-          const jsonText = element.textContent.trim();
-          if (jsonText) {
-            const json = JSON.parse(jsonText);
-            await executeQuery(json);
-            return;
-          }
-        }
-        resultDiv.textContent = 'No JSON data found in clipboard or page.';
-      } catch (error) {
-        console.error('Failed to get JSON from page:', error);
-        resultDiv.textContent = 'No valid JSON data found. Please copy JSON data to clipboard or ensure it is visible on the page.';
-      }
+      console.error('Clipboard access failed:', error);
+      resultDiv.textContent = 'Please allow clipboard access to use this feature.';
+      return;
     }
   };
 
