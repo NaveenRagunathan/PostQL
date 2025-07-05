@@ -90,8 +90,8 @@ function injectUI() {
 
     const executeQuery = async (json) => {
       try {
-        // TODO: Replace with your actual production URL after deployment
-        const response = await fetch('https://your-app-name.onrender.com/api/query', {
+        // Updated to use the correct production URL and endpoint
+        const response = await fetch('https://postql-backend.onrender.com/api/query', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ json, query }),
