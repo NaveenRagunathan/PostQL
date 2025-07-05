@@ -90,7 +90,6 @@ function injectUI() {
 
     const executeQuery = async (json) => {
       try {
-        // Updated to use the correct production URL and endpoint
         const response = await fetch('https://postql-backend.onrender.com/api/query', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -98,36 +97,76 @@ function injectUI() {
         });
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(`Backend Error: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+          resultDiv.textContent = `Error: ${errorData.error || 'Failed to process query'}`;
+          return;
         }
         const data = await response.json();
         resultDiv.textContent = data.result;
       } catch (error) {
-        resultDiv.textContent = `PostQL Error: ${error.message}`;
+        resultDiv.textContent = `Error: ${error.message}`;
       }
     };
 
-    if (cachedJson) {
-      console.log('PostQL: Using cached JSON for query.');
-      await executeQuery(cachedJson);
-    } else {
-      console.log('PostQL: No cached JSON. Copying from clipboard.');
-      const copyButton = document.querySelector('[data-testid="text-editor-copy-button-response-body"]');
-      if (!copyButton) {
-        resultDiv.textContent = 'PostQL Error: Could not find the Postman copy button.';
-        return;
-      }
-      copyButton.click();
+    // Try to get JSON from clipboard first
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      const json = JSON.parse(clipboardText);
+      await executeQuery(json);
+    } catch (error) {
+      console.error('Failed to get JSON from clipboard:', error);
+      // If clipboard fails, try to get JSON from the page
       try {
-        const clipboardText = await navigator.clipboard.readText();
-        cachedJson = JSON.parse(clipboardText); // Cache the parsed JSON
-        await executeQuery(cachedJson);
+        const elements = document.querySelectorAll('.response-viewer-tab-content');
+        for (const element of elements) {
+          const jsonText = element.textContent.trim();
+          if (jsonText) {
+            const json = JSON.parse(jsonText);
+            await executeQuery(json);
+            return;
+          }
+        }
+        resultDiv.textContent = 'No JSON data found in clipboard or page.';
       } catch (error) {
-        resultDiv.textContent = `PostQL Error: Failed to read or parse JSON from clipboard. ${error.message}`;
-        cachedJson = null; // Clear cache on error
+        console.error('Failed to get JSON from page:', error);
+        resultDiv.textContent = 'No valid JSON data found. Please copy JSON data to clipboard or ensure it is visible on the page.';
       }
     }
   };
+
+  // Listen for messages from popup
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'getJson') {
+      // Handle async clipboard reading
+      navigator.clipboard.readText()
+        .then(clipboardText => {
+          try {
+            const json = JSON.parse(clipboardText);
+            sendResponse({ json });
+          } catch (error) {
+            // Try page content
+            try {
+              const elements = document.querySelectorAll('.response-viewer-tab-content');
+              for (const element of elements) {
+                const jsonText = element.textContent.trim();
+                if (jsonText) {
+                  const json = JSON.parse(jsonText);
+                  sendResponse({ json });
+                  return;
+                }
+              }
+            } catch (error) {
+              console.error('Failed to get JSON from page:', error);
+            }
+            sendResponse(null);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to read clipboard:', error);
+          sendResponse(null);
+        });
+      return true; // Will respond asynchronously
+    }
+  });
 }
 
 // --- CSS Styles ---
