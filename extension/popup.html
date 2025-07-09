@@ -1,50 +1,139 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>PostQL</title>
+    <title>PostQL - Query JSON in Postman</title>
     <style>
+        :root {
+            --primary-color: #FF6C37;
+            --primary-hover: #E55F2B;
+            --text-color: #333;
+            --border-color: #ddd;
+            --error-color: #e74c3c;
+            --success-color: #2ecc71;
+        }
+
         body {
-            width: 300px;
-            padding: 10px;
-            font-family: Arial, sans-serif;
+            width: 350px;
+            padding: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.5;
         }
-        h1 {
-            margin: 0 0 10px 0;
+        
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .header h1 {
+            margin: 0;
             font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-color);
         }
+        
+        .input-group {
+            margin-bottom: 10px;
+        }
+        
         #query-input {
             width: 100%;
-            margin: 10px 0;
-            padding: 8px;
-            border: 1px solid #ddd;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
         }
-        #query-button {
+        
+        #query-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(255, 108, 55, 0.2);
+        }
+        
+        #run-query {
             width: 100%;
-            padding: 8px;
-            background-color: #4CAF50;
+            padding: 10px;
+            background-color: var(--primary-color);
             color: white;
             border: none;
             border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
+            transition: background-color 0.2s;
         }
-        #query-button:hover {
-            background-color: #45a049;
+        
+        #run-query:hover:not(:disabled) {
+            background-color: var(--primary-hover);
         }
+        
+        #run-query:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        #status {
+            margin: 10px 0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            display: none;
+        }
+        
+        #status.error {
+            background-color: #FDEDED;
+            color: var(--error-color);
+            display: block;
+        }
+        
+        #status.info {
+            background-color: #E8F4FD;
+            color: #2C7BE5;
+            display: block;
+        }
+        
         #result {
             margin-top: 15px;
-            padding: 10px;
-            border: 1px solid #ddd;
+            padding: 12px;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
-            min-height: 50px;
+            min-height: 60px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <h1>PostQL</h1>
-    <input type="text" id="query-input" placeholder="Ask a question about the JSON response...">
-    <button id="query-button">Run Query</button>
-    <div id="result">Your results will appear here.</div>
+    <div class="header">
+        <h1>PostQL - Query JSON in Postman</h1>
+    </div>
+    
+    <div class="input-group">
+        <input type="text" id="query-input" 
+               placeholder="e.g., Find all users with age > 30..." 
+               autocomplete="off">
+    </div>
+    
+    <button id="run-query">Run Query</button>
+    
+    <div id="status"></div>
+    <div id="result">Your query results will appear here.</div>
+    
     <script src="popup.js"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@ const axios = require('axios');
 
 exports.queryJson = async (req, res) => {
   const { json, query } = req.body;
-  const apiKey = process.env.MISTRAL_API_KEY;
+  const apiKey = req.headers['x-api-key'] || process.env.MISTRAL_API_KEY;
 
   if (!apiKey) {
     return res.status(500).json({ error: 'Mistral API key not found. Please check your .env file.' });
