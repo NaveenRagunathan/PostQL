@@ -132,13 +132,50 @@ function injectPostQLModal() {
   `;
   document.body.appendChild(modal);
   document.getElementById('postql-close').onclick = () => modal.remove();
-  document.getElementById('postql-run').onclick = async () => {
-    const q = document.getElementById('postql-query').value.trim();
+  document.getElementById('postql-run').onclick = async function() {
+    const queryInput = document.getElementById('postql-query');
+    const runButton = this; // Reference to the clicked button
+    
+    const q = queryInput.value.trim();
     if (!q) return;
+    
+    // Disable input and button during processing
+    queryInput.readOnly = true;
+    runButton.disabled = true;
+    runButton.textContent = 'Processing...';
+    runButton.style.opacity = '0.7';
+    runButton.style.cursor = 'wait';
     document.getElementById('postql-result').textContent = 'Querying...';
-    const json = await chrome.storage.local.get('postql_json').then(d => d.postql_json);
-    if (!json) {
-      document.getElementById('postql-result').textContent = 'No JSON found.';
+    // Wrap chrome.storage.local.get in a Promise with error handling
+    async function getPostqlJson() {
+      return new Promise((resolve, reject) => {
+        try {
+          if (!chrome.storage || !chrome.storage.local) {
+            throw new Error('Chrome storage is not available');
+          }
+          chrome.storage.local.get('postql_json', (result) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve(result.postql_json);
+            }
+          });
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }
+
+    let json;
+    try {
+      json = await getPostqlJson();
+      if (!json) {
+        document.getElementById('postql-result').textContent = 'No JSON found in storage.';
+        return;
+      }
+    } catch (e) {
+      console.error('Error accessing Chrome storage:', e);
+      document.getElementById('postql-result').textContent = 'Error: Could not access storage. Please refresh the page and try again.';
       return;
     }
     try {
@@ -148,9 +185,22 @@ function injectPostQLModal() {
         body: JSON.stringify({ json, query: q })
       });
       const data = await resp.json();
-      document.getElementById('postql-result').textContent = data.result || JSON.stringify(data);
+      // Extract just the result text from the response
+      const resultText = data?.data?.result || data?.result || 'No result found';
+      document.getElementById('postql-result').textContent = resultText;
     } catch (e) {
       document.getElementById('postql-result').textContent = 'Backend error.';
+    } finally {
+      // Re-enable input and button when done
+      const queryInput = document.getElementById('postql-query');
+      const runButton = document.getElementById('postql-run');
+      if (queryInput) queryInput.readOnly = false;
+      if (runButton) {
+        runButton.disabled = false;
+        runButton.textContent = 'Ask';
+        runButton.style.opacity = '1';
+        runButton.style.cursor = 'pointer';
+      }
     }
   };
 

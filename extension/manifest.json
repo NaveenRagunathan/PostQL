@@ -1,5 +1,5 @@
 {
-  "manifest_version": 3,
+  "manifest_version": 2,
   "name": "PostQL - Query JSON with AI",
   "description": "Query JSON responses in Postman using natural language.",
   "version": "2.0.0",
