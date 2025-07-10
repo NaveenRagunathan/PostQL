@@ -1,32 +1,28 @@
 {
   "manifest_version": 3,
   "name": "PostQL - Query JSON with AI",
-  "description": "Query JSON responses in Postman using natural language. Get instant insights without manual parsing.",
-  "version": "1.0.0",
-  "version_name": "1.0.0",
-  "author": "Your Name",
-  "icons": {
-    "128": "icon128.png"
-  },
-  "permissions": [
-    "clipboardRead",
-    "storage"
-  ],
+  "description": "Query JSON responses in Postman using natural language.",
+  "version": "2.0.0",
+  "permissions": ["scripting", "storage"],
   "host_permissions": [
     "https://*.postman.com/*",
-    "https://postql-backend.onrender.com/*"
+    "https://*.postman.co/*",
+    "https://postql.onrender.com/*"
   ],
   "content_scripts": [
     {
-      "matches": ["https://*.postman.com/*"],
+      "matches": [
+        "https://*.postman.com/*",
+        "https://*.postman.co/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
   ],
-  "update_url": "https://clients2.google.com/service/update2/crx",
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": "icon128.png"
+  "icons": {
+    "128": "icon128.png"
   },
-  "minimum_chrome_version": "90"
+  "action": {
+    "default_icon": "icon128.png"
+  }
 }

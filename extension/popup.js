@@ -1,3 +1,4 @@
+console.log('[PostQL] popup.js script loaded');
 document.addEventListener('DOMContentLoaded', () => {
     // UI Elements
     const queryInput = document.getElementById('query-input');
@@ -22,10 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
     async function initializePopup() {
         try {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            console.log('[PostQL][popup] Checking tab:', tab ? tab.url : tab);
             const isValid = await checkPostmanPage(tab);
-            
+            console.log('[PostQL][popup] checkPostmanPage result:', isValid);
             if (!isValid) {
-                disableUI('Please open a Postman response tab');
+                disableUI('Not a valid Postman response tab or cannot communicate with content script. Tab URL: ' + (tab ? tab.url : 'N/A'));
             } else {
                 enableUI();
             }
@@ -39,13 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function checkPostmanPage(tab) {
         try {
             if (!tab?.url?.includes('postman.com')) {
+                console.warn('[PostQL][popup] Tab URL does not include postman.com:', tab?.url);
                 return false;
             }
-            
             // Check if we can access the content script
             const response = await chrome.tabs.sendMessage(tab.id, { action: 'ping' })
-                .catch(() => null);
-                
+                .catch((e) => { console.warn('[PostQL][popup] ping failed:', e); return null; });
+            console.log('[PostQL][popup] ping response:', response);
             return !!response?.success;
         } catch (error) {
             console.error('Error checking Postman page:', error);
@@ -60,32 +62,51 @@ document.addEventListener('DOMContentLoaded', () => {
             showError('Please enter a query');
             return;
         }
-
+        // Simple input validation: limit length and basic pattern
+        if (query.length > 256) {
+            showError('Query is too long (max 256 characters)');
+            return;
+        }
+        if (/[^\w\s.,?!:;\-()\[\]{}'"/]/.test(query)) {
+            showError('Invalid characters in query');
+            return;
+        }
         setLoadingState(true);
         clearResult();
-        
-        try {
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            
-            // Step 1: Get JSON from content script
-            const jsonResponse = await chrome.tabs.sendMessage(tab.id, { action: 'getJson' });
-            
-            if (!jsonResponse?.success) {
-                throw new Error(jsonResponse?.error?.message || 'Failed to get JSON data from Postman');
+        let retries = 2;
+        while (retries >= 0) {
+            try {
+                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                // Step 1: Get JSON from content script
+                const jsonResponse = await chrome.tabs.sendMessage(tab.id, { action: 'getJson' });
+                if (!jsonResponse?.success) {
+                    throw new Error(jsonResponse?.error?.message || 'Failed to get JSON data from Postman');
+                }
+                // Step 2: Process the query
+                const result = await processQuery(query, jsonResponse.json);
+                // Step 3: Display results
+                displayResult(result);
+                showStatus('Query completed successfully', 'success');
+                return;
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    showError('Query timed out. Please try again.');
+                    break;
+                }
+                if (retries > 0 && (error.message.includes('Network') || error.message.includes('Failed to fetch'))) {
+                    retries--;
+                    showStatus('Network error, retrying...', 'warning');
+                    continue;
+                }
+                if (error.message && error.message.startsWith('Invalid') || error.message.startsWith('Please enter')) {
+                    showError(error.message);
+                } else {
+                    showError('System error: ' + (error.message || 'Unknown error'));
+                }
+                break;
+            } finally {
+                setLoadingState(false);
             }
-
-            // Step 2: Process the query
-            const result = await processQuery(query, jsonResponse.json);
-            
-            // Step 3: Display results
-            displayResult(result);
-            showStatus('Query completed successfully', 'success');
-            
-        } catch (error) {
-            console.error('Query execution error:', error);
-            showError(error.message || 'An error occurred while processing your query');
-        } finally {
-            setLoadingState(false);
         }
     }
 
@@ -94,8 +115,15 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-            
-            const response = await fetch('https://postql.onrender.com/api/query', {
+            // Try to get backend URL from manifest, fallback to default
+            let backendUrl = 'https://postql.onrender.com/api/query';
+            try {
+                const manifest = chrome.runtime.getManifest();
+                if (manifest && manifest.backend_url) {
+                    backendUrl = manifest.backend_url;
+                }
+            } catch (e) {}
+            const response = await fetch(backendUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ json: jsonData, query }),
@@ -171,7 +199,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function disableUI(message) {
         queryInput.disabled = true;
         runQueryBtn.disabled = true;
-        showError(message || 'Not available on this page');
+        copyBtn.disabled = true;
+        clearBtn.disabled = true;
+        showStatus('[DISABLED] ' + message, 'error');
+        console.warn('[PostQL][popup] UI disabled:', message);
     }
 
     function enableUI() {

@@ -25,10 +25,16 @@ exports.queryJson = async (req, res) => {
       }
     );
 
+    // Post-process to remove markdown code blocks and just return plain text
+    let content = mistralRes.data.choices[0].message.content;
+    // Remove triple backtick code blocks (including language hints)
+    content = content.replace(/```[a-zA-Z]*[\s\S]*?```/g, '').trim();
+    // Remove any leftover markdown artifacts
+    content = content.replace(/^[#*>\-]+\s?/gm, '').replace(/\n{2,}/g, '\n').trim();
     return res.status(200).json({
       status: 'success',
       data: {
-        result: mistralRes.data.choices[0].message.content
+        result: content
       }
     });
 
